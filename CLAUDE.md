@@ -1,3 +1,32 @@
+# Hexymon Project Context
+
+**Hexymon** is a daily linguistic puzzle game where users connect a Start Word to a Target Word via etymological links (Ancestry, Descent, Borrowing).
+
+## Architecture
+
+- **Frontend**: SvelteKit (Svelte 5) + Tailwind CSS.
+- **Backend**: Netlify Edge Functions (simulated via SvelteKit endpoints `src/routes/api/...`).
+- **Data**: Static JSON graph (`src/lib/data/graph.json`) generated from a script.
+- **State**: In-memory graph traversal on the client for the daily puzzle path.
+
+## Key Features
+
+- **Daily Puzzle**: Hardcoded/seeded path.
+- **Hexagonal UI**: Custom SVG-based hexagon grid with responsive "Snake" layout (Vertical on Mobile, Horizontal on Desktop).
+- **Game Logic**:
+  - 6 Lives.
+  - Hints reveal Part of Speech on incorrect guesses.
+  - Win/Loss states with confetti and sharing.
+
+## Current Status
+
+- MVP complete.
+- UI is responsive and accessible.
+- "How to Play" modal implemented.
+- Search with typeahead implemented.
+
+---
+
 You are able to use the Svelte MCP server, where you have access to comprehensive Svelte 5 and SvelteKit documentation. Here's how to use the available tools effectively:
 
 ## Available MCP Tools:
