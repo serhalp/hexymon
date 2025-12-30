@@ -5,13 +5,15 @@
   import Hexagon from "$lib/components/Hexagon.svelte";
   import Search from "$lib/components/Search.svelte";
   import HowToPlayModal from "$lib/components/HowToPlayModal.svelte";
+  import { MAX_MISTAKES, MISTAKE_WARNING_THRESHOLD, MISTAKE_CRITICAL_THRESHOLD } from "$lib/config";
   import searchIndexRaw from "$lib/data/search_index.json";
-  import type { Node, SearchIndexItem } from "$lib/types";
+  import type { Node, Puzzle, SearchIndexItem } from "$lib/types";
 
   const searchIndex = searchIndexRaw as SearchIndexItem[];
+  const { data = {} } = $props<{ data?: { puzzle?: Puzzle | null } }>();
 
   let loading = $state(true);
-  let puzzle = $state<any>(null);
+  let puzzle = $state<Puzzle | null>(null);
   let pathNodes = $state<(Node | null)[]>([]);
   let currentNodeId = $state("");
   let message = $state("");
@@ -19,11 +21,12 @@
 
   let totalGuesses = $state(0);
   let incorrectGuesses = $state(0);
-  const maxMistakes = 6;
+  const maxMistakes = MAX_MISTAKES;
   let hintsRevealed = $state(0); // Track how many hints have been revealed
 
   let copied = $state(false);
   let showHelp = $state(false); // Modal state
+  let showWinModal = $state(false);
   let hoveredIndex = $state<number | null>(null); // For z-index management
 
   // Derived state to check if won (ensure loaded first)
@@ -32,18 +35,29 @@
   );
   let minimumMoves = $derived(puzzle ? puzzle.totalPathLength - 2 : 0);
   let mistakesRemaining = $derived(maxMistakes - incorrectGuesses);
+  let chainHeight = $derived(puzzle ? puzzle.totalPathLength * 90 : 0);
+  let chainPaddingBottom = $derived(puzzle ? Math.max(puzzle.totalPathLength * 60, 200) : 200);
+
+  function initPuzzle(p: Puzzle | null) {
+    if (!p) return;
+    puzzle = p;
+    pathNodes = new Array(p.totalPathLength).fill(null);
+    pathNodes[0] = p.startNode;
+    pathNodes[p.totalPathLength - 1] = p.targetNode;
+    currentNodeId = p.startNode.id;
+  }
 
   onMount(async () => {
+    if (data?.puzzle) {
+      initPuzzle(data.puzzle);
+      loading = false;
+      return;
+    }
+
     try {
       const res = await fetch("/api/daily");
       const data = await res.json();
-      puzzle = data;
-
-      pathNodes = new Array(data.totalPathLength).fill(null);
-      pathNodes[0] = data.startNode;
-      pathNodes[data.totalPathLength - 1] = data.targetNode;
-
-      currentNodeId = data.startNode.id;
+      initPuzzle(data);
     } catch (e) {
       message = "Failed to load puzzle.";
     } finally {
@@ -53,6 +67,7 @@
 
   $effect(() => {
     if (isWon) {
+      showWinModal = true;
       confetti({
         particleCount: 200,
         spread: 100,
@@ -78,6 +93,10 @@ ${pluralize(incorrectGuesses, "mistake", "mistakes")}.\n\nNerd out yourself here
     navigator.clipboard.writeText(shareString);
     copied = true;
     setTimeout(() => (copied = false), 2000);
+  }
+
+  function closeWinModal() {
+    showWinModal = false;
   }
 
   function revealHint() {
@@ -151,7 +170,7 @@ ${pluralize(incorrectGuesses, "mistake", "mistakes")}.\n\nNerd out yourself here
       // AND are not yet in revealedHintIndices
       const availableIndices: number[] = [];
 
-      puzzle.scaffold.forEach((_: any, i: number) => {
+      puzzle.scaffold.forEach((_, i: number) => {
         // scaffold[i] corresponds to pathNodes[i+1]
         if (pathNodes[i + 1] === null && !revealedHintIndices.includes(i)) {
           availableIndices.push(i);
@@ -180,62 +199,77 @@ ${pluralize(incorrectGuesses, "mistake", "mistakes")}.\n\nNerd out yourself here
   );
 </script>
 
+<svelte:window
+  on:keydown={(e) => {
+    if (e.key === "Escape") {
+      if (showHelp) showHelp = false;
+      if (showWinModal) closeWinModal();
+    }
+  }}
+/>
+
 <div class="flex min-h-screen flex-col bg-[#fdfbf7] pb-32 font-sans text-slate-900">
   <!-- Header -->
   <header
     class="sticky top-0 z-40 border-b border-indigo-100 bg-white/80 shadow-sm backdrop-blur-md"
   >
-    <div class="container mx-auto flex max-w-lg items-center justify-between px-4 py-3">
-      <div class="flex items-center gap-2">
-        <div class="h-8 w-8 text-indigo-900">
+    <div
+      class="container mx-auto flex max-w-5xl items-center justify-between px-4 py-4 md:px-8 md:py-6"
+    >
+      <div class="flex items-center gap-3 md:gap-4">
+        <div class="h-10 w-10 text-indigo-900 md:h-14 md:w-14">
           <!-- Small Logo Icon -->
           <svg viewBox="0 0 100 115.47" class="h-full w-full fill-current">
             <path d="M50 0 L93.3 25 L93.3 75 L50 100 L6.7 75 L6.7 25 Z" />
           </svg>
         </div>
         <div>
-          <h1 class="font-serif text-xl leading-none font-black tracking-tight text-indigo-900">
+          <h1
+            class="font-serif text-2xl leading-none font-black tracking-tight text-indigo-900 md:text-4xl"
+          >
             HEXYMON
           </h1>
-          <p class="text-[10px] font-bold tracking-widest text-indigo-400 uppercase">
+          <p
+            class="text-[10px] font-bold tracking-widest text-indigo-400 uppercase md:text-xs md:tracking-[0.35em]"
+          >
             Etymology Puzzle
           </p>
         </div>
       </div>
 
       <div class="flex flex-col items-end">
-        <div class="flex items-center gap-3">
-          <div class="flex flex-col items-end">
-            <span class="text-[10px] font-bold tracking-wider text-slate-400 uppercase"
+        <div class="flex items-center gap-3 md:gap-4">
+          <div class="group relative flex cursor-help flex-col items-end">
+            <span class="text-[10px] font-bold tracking-wider text-slate-400 uppercase md:text-xs"
               >Mistakes Remaining</span
             >
             <span
-              class="font-mono text-lg leading-none font-bold transition-colors"
-              class:text-rose-500={mistakesRemaining <= 2}
-              class:text-amber-500={mistakesRemaining > 2 && mistakesRemaining <= 4}
-              class:text-emerald-500={mistakesRemaining > 4}
+              class="font-mono text-lg leading-none font-bold transition-colors md:text-2xl"
+              class:text-rose-500={mistakesRemaining <= MISTAKE_CRITICAL_THRESHOLD}
+              class:text-amber-500={mistakesRemaining > MISTAKE_CRITICAL_THRESHOLD &&
+                mistakesRemaining <= MISTAKE_WARNING_THRESHOLD}
+              class:text-emerald-500={mistakesRemaining > MISTAKE_WARNING_THRESHOLD}
             >
               {Math.max(0, mistakesRemaining)}
             </span>
+            <div
+              class="pointer-events-none absolute top-full left-1/2 z-30 mt-2 hidden w-56 -translate-x-1/2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[14px] text-slate-600 shadow-lg group-hover:block"
+            >
+              You have {maxMistakes} lives; each wrong guess reveals a hint. If you run out, you lose.
+              <div
+                class="absolute -top-2 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-t border-l border-slate-200 bg-white"
+              ></div>
+            </div>
           </div>
 
           <button
-            class="rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-indigo-600"
+            class="cursor-pointer rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-indigo-600 md:p-3"
             onclick={() => (showHelp = true)}
             aria-label="How to play"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              ><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"
-              ></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg
+            <span
+              class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-current text-lg font-bold md:h-10 md:w-10 md:text-xl"
+              aria-hidden="true">?</span
             >
           </button>
         </div>
@@ -245,18 +279,23 @@ ${pluralize(incorrectGuesses, "mistake", "mistakes")}.\n\nNerd out yourself here
 
   <HowToPlayModal isOpen={showHelp} onClose={() => (showHelp = false)} />
 
-  <main class="relative container mx-auto mt-8 flex max-w-lg flex-col items-center p-4">
+  <main class="relative container mx-auto mt-6 flex max-w-lg flex-col items-center p-4 md:mt-10">
     {#if loading}
-      <div class="flex animate-pulse flex-col items-center gap-4">
-        {#each { length: 5 } as _}
-          <div class="h-24 w-24 rounded-full bg-slate-200/50"></div>
+      <div class="flex flex-col items-center gap-6">
+        {#each { length: 5 } as _, i}
+          <div
+            class="skeleton-hex h-24 w-24"
+            style={`animation-delay: ${i * 120}ms;`}
+            aria-hidden="true"
+          ></div>
         {/each}
       </div>
     {:else if puzzle}
       <!-- The Chain -->
       <!-- Mobile: Vertical Column. Desktop: Horizontal Row (centered) -->
       <div
-        class="relative flex flex-col items-center justify-center pt-4 pb-24 md:flex-row md:px-12 md:pt-20 md:pb-32"
+        class="relative flex flex-col items-center justify-center md:flex-row md:px-12"
+        style={`padding-top: 1rem; padding-bottom: ${chainPaddingBottom}px;`}
       >
         {#each { length: puzzle.totalPathLength } as _, i}
           {@const node = pathNodes[i]}
@@ -426,7 +465,9 @@ ${pluralize(incorrectGuesses, "mistake", "mistakes")}.\n\nNerd out yourself here
     {/if}
 
     <!-- Search & Messages -->
-    <div class="relative z-10 mt-8 flex w-full max-w-md flex-col items-center gap-2 pb-8">
+    <div
+      class="relative mt-6 flex w-full max-w-md flex-col items-center gap-3 pb-8 md:mt-10 lg:mt-12"
+    >
       {#if message}
         <div class="mb-4 text-center" in:slide={{ axis: "y" }}>
           <span
@@ -494,13 +535,20 @@ ${pluralize(incorrectGuesses, "mistake", "mistakes")}.\n\nNerd out yourself here
 </div>
 
 <!-- Win Modal -->
-{#if isWon}
+{#if showWinModal}
   <div
-    class="fixed inset-0 z-[60] flex items-center justify-center p-4"
+    class="fixed inset-0 z-[500] flex items-center justify-center p-4"
+    role="dialog"
+    aria-modal="true"
     in:fade={{ duration: 200 }}
   >
     <!-- Backdrop -->
-    <div class="absolute inset-0 bg-indigo-900/40 backdrop-blur-sm"></div>
+    <button
+      type="button"
+      class="absolute inset-0 cursor-pointer bg-indigo-900/40 backdrop-blur-sm"
+      aria-label="Close modal"
+      onclick={closeWinModal}
+    ></button>
 
     <div
       class="relative w-full max-w-sm overflow-hidden rounded-3xl bg-white p-8 text-center shadow-2xl"
@@ -510,6 +558,14 @@ ${pluralize(incorrectGuesses, "mistake", "mistakes")}.\n\nNerd out yourself here
       <div
         class="absolute top-0 left-0 h-2 w-full bg-gradient-to-r from-indigo-500 via-emerald-400 to-amber-400"
       ></div>
+
+      <button
+        class="absolute top-4 right-4 rounded-full px-2 py-1 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
+        aria-label="Close"
+        onclick={closeWinModal}
+      >
+        <span class="text-lg leading-none font-semibold" aria-hidden="true">&times;</span>
+      </button>
 
       <div class="mb-6 animate-bounce text-5xl">🏆</div>
       <h2 class="mb-1 font-serif text-3xl font-bold text-slate-900">Puzzle Solved!</h2>
@@ -571,5 +627,30 @@ ${pluralize(incorrectGuesses, "mistake", "mistakes")}.\n\nNerd out yourself here
 <style>
   :global(body) {
     font-family: "Work Sans", sans-serif;
+  }
+
+  .skeleton-hex {
+    position: relative;
+    clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+    background: linear-gradient(90deg, #e2e8f0 0%, #f8fafc 50%, #e2e8f0 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+    opacity: 0.9;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: 200% 0;
+      transform: translateY(0) scale(0.98);
+    }
+    50% {
+      background-position: 0% 0;
+      transform: translateY(-4px) scale(1);
+    }
+    100% {
+      background-position: -200% 0;
+      transform: translateY(0) scale(0.98);
+    }
   }
 </style>

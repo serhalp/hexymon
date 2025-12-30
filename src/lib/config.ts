@@ -1,0 +1,3 @@
+export const MAX_MISTAKES = 6;
+export const MISTAKE_WARNING_THRESHOLD = 4;
+export const MISTAKE_CRITICAL_THRESHOLD = 2;

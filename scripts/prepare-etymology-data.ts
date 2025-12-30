@@ -10,6 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const INPUT_PATH = path.resolve(__dirname, "../data/etymologies.json");
+const PATCH_PATH = path.resolve(__dirname, "../data/etymology_patches.json");
 const OUTPUT_DIR = path.resolve(__dirname, "../src/lib/data");
 const FALLBACK_DEFINITION = "Definition not provided (EtymoLink dataset).";
 
@@ -175,12 +176,39 @@ function normalizeText(text: string): string {
     .toLowerCase();
 }
 
+function mergeWordEntries(base: WordEntry[], patches: WordEntry[]): WordEntry[] {
+  const map = new Map<string, WordEntry>();
+
+  base.forEach((entry) => {
+    map.set(canonicalizeId(entry.word), { ...entry, etymology_chain: [...entry.etymology_chain] });
+  });
+
+  patches.forEach((entry) => {
+    const key = canonicalizeId(entry.word);
+    const existing = map.get(key);
+    if (existing) {
+      existing.etymology_chain.push(...entry.etymology_chain);
+      if (!existing.word_root && entry.word_root) {
+        existing.word_root = entry.word_root;
+      }
+    } else {
+      map.set(key, { ...entry, etymology_chain: [...entry.etymology_chain] });
+    }
+  });
+
+  return Array.from(map.values());
+}
+
 if (!fs.existsSync(INPUT_PATH)) {
   console.error(`Missing input file at ${INPUT_PATH}. Please place etymologies.json there first.`);
   process.exit(1);
 }
 
-const raw = JSON.parse(fs.readFileSync(INPUT_PATH, "utf8")) as InputFile;
+const base = JSON.parse(fs.readFileSync(INPUT_PATH, "utf8")) as InputFile;
+const patches = fs.existsSync(PATCH_PATH)
+  ? (JSON.parse(fs.readFileSync(PATCH_PATH, "utf8")) as InputFile)
+  : { words: [] };
+const words = mergeWordEntries(base.words, patches.words);
 const nodes: Record<string, Node> = {};
 const edges: Edge[] = [];
 const edgeSet = new Set<string>();
@@ -200,7 +228,7 @@ function ensureNode(id: string, wordRoot?: string) {
   };
 }
 
-raw.words.forEach((entry) => {
+words.forEach((entry) => {
   const canonicalWordId = canonicalizeId(entry.word);
   ensureNode(canonicalWordId, entry.word_root);
 

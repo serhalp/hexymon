@@ -1,5 +1,5 @@
 import { json } from "@sveltejs/kit";
-import { getDefaultPuzzle } from "$lib/server/puzzles";
+import { getDefaultPuzzle } from "$lib/server/puzzle_service";
 
 export const GET = async () => {
   const puzzle = getDefaultPuzzle();

@@ -24,12 +24,24 @@
 
   // Filter logic
   let results = $derived(
-    query.length < 2
-      ? []
-      : index
-          .filter((item) => !excludeIds.includes(item.id))
-          .filter((item) => item.searchText.includes(normalizeText(query)))
-          .slice(0, 8),
+    (() => {
+      if (query.length < 2) return [];
+      const q = normalizeText(query);
+      const startsWith: SearchIndexItem[] = [];
+      const contains: SearchIndexItem[] = [];
+
+      index.forEach((item) => {
+        if (excludeIds.includes(item.id)) return;
+        if (!item.searchText.includes(q)) return;
+        if (item.searchText.startsWith(q)) {
+          startsWith.push(item);
+        } else {
+          contains.push(item);
+        }
+      });
+
+      return [...startsWith, ...contains];
+    })(),
   );
 
   function handleSelect(item: SearchIndexItem) {
@@ -54,7 +66,7 @@
   }
 </script>
 
-<div class="relative mx-auto w-full max-w-md" role="search">
+<div class="relative z-[200] mx-auto w-full max-w-md" role="search">
   <!-- Results Dropdown -->
   {#if isOpen && results.length > 0}
     <ul
@@ -85,7 +97,7 @@
             >
           </div>
           {#if item.definition}
-            <div class="mt-0.5 line-clamp-1 text-xs text-slate-500 italic">{item.definition}</div>
+            <div class="mt-0.5 text-xs text-slate-500 italic">{item.definition}</div>
           {/if}
         </li>
       {/each}
@@ -94,7 +106,7 @@
 
   <!-- Search Input -->
   <form class="group relative" onsubmit={handleSubmit}>
-    <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+    <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-5">
       <svg
         class="h-5 w-5 text-slate-400 transition-colors group-focus-within:text-indigo-500"
         xmlns="http://www.w3.org/2000/svg"
@@ -116,7 +128,7 @@
       onkeydown={handleKeydown}
       placeholder={disabled ? "Solved!" : "Search for a word..."}
       {disabled}
-      class="block w-full rounded-full border-0 bg-white py-4 pr-12 pl-11 font-sans text-lg text-slate-900 shadow-xl ring-1 ring-slate-200 transition-all duration-300 placeholder:text-slate-400 focus:shadow-2xl focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-400"
+      class="block w-full rounded-full border-0 bg-white py-4 pr-12 pl-12 font-sans text-lg text-slate-900 shadow-xl ring-1 ring-slate-200 transition-all duration-300 placeholder:text-slate-400 focus:shadow-2xl focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-400"
     />
 
     <div class="absolute inset-y-0 right-0 flex items-center pr-2">

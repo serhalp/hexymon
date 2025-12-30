@@ -7,7 +7,7 @@
   "scripts": {
     "build": "pnpm run build:data && pnpm run build:app",
     "build:app": "vite build",
-    "build:data": "tsx scripts/prepare-etymology-data.ts",
+    "build:data": "tsx scripts/prepare-etymology-data.ts && pnpm run validate:data",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "dev": "vite dev",
@@ -17,7 +17,8 @@
     "preview": "vite preview",
     "test": "pnpm run test:unit -- --run && pnpm run test:e2e",
     "test:e2e": "playwright test",
-    "test:unit": "vitest"
+    "test:unit": "vitest",
+    "validate:data": "tsx scripts/validate_puzzles.ts"
   },
   "devDependencies": {
     "@eslint/compat": "^1.4.0",

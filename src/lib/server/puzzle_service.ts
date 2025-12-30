@@ -1,58 +1,10 @@
 import { getNode } from "$lib/server/db";
-import type { Node } from "$lib/types";
-
-type PuzzleDefinition = {
-  id: string;
-  pathIds: string[];
-  name?: string;
-};
-
-type Puzzle = {
-  puzzleId: string;
-  pathIds: string[];
-  startNode: Node;
-  targetNode: Node;
-  scaffold: Array<{
-    index: number;
-    lang?: string;
-    hint: {
-      lang?: string;
-      definition?: string;
-      pos?: string;
-    };
-  }>;
-  totalPathLength: number;
-};
-
-// Candidate puzzles. They are filtered at runtime if nodes are missing
-// so the app never serves an invalid path even if the dataset changes.
-const PUZZLE_DEFINITIONS: PuzzleDefinition[] = [
-  {
-    id: "1",
-    name: "Approbate chain",
-    pathIds: ["approbate_E", "approbatus_L", "approbare_L"],
-  },
-  {
-    id: "2",
-    name: "Manitou (Unami) link",
-    pathIds: ["manitou_E", "manet:u_Unami"],
-  },
-  {
-    id: "3",
-    name: "Hexagon to six (mock fallback)",
-    pathIds: [
-      "en_hexagon",
-      "gr_hexagon",
-      "gr_hex",
-      "pie_sueks",
-      "proto_germ_sehs",
-      "old_en_siex",
-      "en_six",
-    ],
-  },
-];
+import type { Puzzle } from "$lib/types";
+import { PUZZLE_DEFINITIONS, type PuzzleDefinition } from "$lib/data/puzzles";
 
 function buildPuzzle(definition: PuzzleDefinition): Puzzle | null {
+  // We re-verify validity here at runtime, just in case,
+  // but the build script should have caught errors.
   const missingIds = definition.pathIds.filter((id) => !getNode(id));
   if (missingIds.length > 0) {
     return null;
@@ -94,13 +46,10 @@ export function getPuzzleById(puzzleId: string): Puzzle | null {
 }
 
 export function getDefaultPuzzle(): Puzzle | null {
+  // Pick the first valid one
   for (const def of PUZZLE_DEFINITIONS) {
     const puzzle = buildPuzzle(def);
     if (puzzle) return puzzle;
   }
   return null;
-}
-
-export function getAllPuzzleIds(): string[] {
-  return PUZZLE_DEFINITIONS.filter((def) => buildPuzzle(def)).map((p) => p.id);
 }

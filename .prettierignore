@@ -7,5 +7,10 @@ bun.lockb
 
 # Miscellaneous
 /static/
+
+# Exported data
 /data/
-/src/lib/data/
+
+# Generated files
+/src/lib/data/graph.json
+/src/lib/data/search_index.json

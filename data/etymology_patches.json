@@ -1,0 +1,57 @@
+{
+  "words": [
+    {
+      "word": "musculus_L",
+      "word_root": "musculus",
+      "pos": "Noun",
+      "definition": "Latin for \"little mouse\"; source of muscle/muscular.",
+      "etymology_chain": [
+        { "source": "musculus_L", "target": "mus_L" }
+      ]
+    },
+    {
+      "word": "mus_L",
+      "word_root": "mus",
+      "pos": "Noun",
+      "definition": "Latin for \"mouse\"; cognate with Germanic mouse.",
+      "etymology_chain": [
+        { "source": "mus_L", "target": "*mus-_PIE" }
+      ]
+    },
+    {
+      "word": "*mus-_PIE",
+      "word_root": "*mus-",
+      "pos": "Noun",
+      "definition": "Proto-Indo-European root for mouse.",
+      "etymology_chain": []
+    },
+    {
+      "word": "*mus_PGer",
+      "word_root": "*mus",
+      "pos": "Noun",
+      "definition": "Proto-Germanic for mouse.",
+      "etymology_chain": []
+    },
+    {
+      "word": "mus_OE",
+      "word_root": "mus",
+      "pos": "Noun",
+      "definition": "Old English for mouse.",
+      "etymology_chain": []
+    },
+    {
+      "word": "mouse (n.)_E",
+      "word_root": "mouse",
+      "pos": "Noun",
+      "definition": "Modern English for mouse.",
+      "etymology_chain": []
+    },
+    {
+      "word": "muscular_E",
+      "word_root": "muscular",
+      "pos": "Adjective",
+      "definition": "Relating to muscle; from Latin muscularis.",
+      "etymology_chain": []
+    }
+  ]
+}

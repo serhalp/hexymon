@@ -19,3 +19,20 @@ export type SearchIndexItem = {
   definition: string;
   searchText: string;
 };
+
+export type Puzzle = {
+  puzzleId: string;
+  pathIds: string[];
+  startNode: Node;
+  targetNode: Node;
+  scaffold: Array<{
+    index: number;
+    lang?: string;
+    hint: {
+      lang?: string;
+      definition?: string;
+      pos?: string;
+    };
+  }>;
+  totalPathLength: number;
+};

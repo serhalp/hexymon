@@ -24,4 +24,5 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
 # Generated files
-/src/lib/data/
+/src/lib/data/graph.json
+/src/lib/data/search_index.json

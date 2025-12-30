@@ -1,6 +1,6 @@
 import { json } from "@sveltejs/kit";
 import { checkConnection, getNode } from "$lib/server/db";
-import { getDefaultPuzzle, getPuzzleById } from "$lib/server/puzzles";
+import { getDefaultPuzzle, getPuzzleById } from "$lib/server/puzzle_service";
 
 export const POST = async ({ request }) => {
   try {

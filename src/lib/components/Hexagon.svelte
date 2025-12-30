@@ -51,14 +51,15 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   class="group relative flex h-52 w-44 items-center justify-center transition-all duration-300 outline-none"
-  class:cursor-pointer={!!node}
-  class:cursor-default={!node}
+  class:cursor-pointer={!!node && !!onClick}
+  class:cursor-help={!!node && !onClick}
+  class:cursor-default={!node && !onClick}
   class:scale-110={isCurrent}
-  onclick={!!node ? onClick : undefined}
+  onclick={node ? onClick : undefined}
   onmouseenter={() => (showTooltip = true)}
   onmouseleave={() => (showTooltip = false)}
   role="button"
-  tabindex={!!node ? 0 : -1}
+  tabindex={node ? 0 : -1}
 >
   <!-- Hexagon SVG -->
   <!-- Adjusted viewBox to prevent clipping of the stroke at the top (M50 0) -->
@@ -96,7 +97,7 @@
   <div class="z-10 flex max-w-[85%] flex-col items-center justify-center p-2 text-center">
     {#if node}
       <span
-        class="font-serif font-bold tracking-tight capitalize transition-colors duration-300 {dynamicTextClass} w-full break-words"
+        class="font-serif font-bold tracking-tight transition-colors duration-300 {dynamicTextClass} w-full break-words"
         style="color: {theme.text}"
       >
         {node.word}
